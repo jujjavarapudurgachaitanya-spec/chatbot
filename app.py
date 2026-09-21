@@ -1,4 +1,10 @@
 """Streamlit chat UI:  streamlit run app.py"""
+import os
+import subprocess
+
+# Check if the database file exists; if not, create it
+if not os.path.exists("data/chatbot.db"):
+    subprocess.run(["python", "data/generate_sample_data.py"])
 
 import sqlite3
 
