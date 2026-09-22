@@ -1,9 +1,3 @@
-"""Text-to-SQL: a LangGraph agent on Gemini that explores the database, writes SQL, and fixes its own errors.
-
-    python chatbot.py                 # interactive CLI
-    python chatbot.py "top 5 vendors by PO value"
-"""
-
 import operator
 import os
 import sqlite3
@@ -26,7 +20,7 @@ load_dotenv()
 
 DB = Path(__file__).parent / "data" / "chatbot.db"
 MODEL = "gemini-3.5-flash-lite"
-MAX_STEPS = 12  # every model turn and every tool run counts as one step
+MAX_STEPS = 12  
 
 SYSTEM = """You answer questions about a supply-chain SQLite warehouse.
 Tables: {tables}
@@ -43,10 +37,8 @@ Values are stored as text, so CAST(col AS REAL) before aggregating numbers.
 Double-quote any identifier starting with a digit ("12nc", "12m_value")."""
 
 
-# ---- Tools the agent can call ----
-
 def connect():
-    return sqlite3.connect(f"file:{DB}?mode=ro", uri=True)  # read-only: writes are impossible
+    return sqlite3.connect(f"file:{DB}?mode=ro", uri=True)  
 
 
 @lru_cache(maxsize=1)
@@ -73,9 +65,9 @@ def run_sql(sql: str) -> str:
     deadline = time.monotonic() + g.QUERY_TIMEOUT_SEC
     conn.set_progress_handler(lambda: time.monotonic() > deadline, 100_000)
     try:
-        checked = g.check_sql(sql, tables())  # guardrails gate every query
+        checked = g.check_sql(sql, tables())  
         df = pd.read_sql_query(checked, conn)
-    except Exception as e:  # blocked, bad column, or timeout: the agent reads it and retries
+    except Exception as e:  
         return f"ERROR: {e.__cause__ or e}"
     finally:
         conn.close()
@@ -86,10 +78,8 @@ def run_sql(sql: str) -> str:
 TOOLS = {f.__name__: f for f in (describe_tables, run_sql)}
 
 
-# ---- The LangGraph agent: model -> tools -> model ... until the model stops calling tools ----
-
 class State(TypedDict):
-    messages: Annotated[list[types.Content], operator.add]  # each node appends to the conversation
+    messages: Annotated[list[types.Content], operator.add] 
 
 
 @lru_cache(maxsize=1)
@@ -133,8 +123,8 @@ def agent():
 
 
 def ask(question: str) -> tuple[str, pd.DataFrame]:
-    q = g.check_question(question)  # dangerous questions stop here, before any API call
-    client()  # fail fast with a clear message if the API key is missing
+    q = g.check_question(question)  
+    client() 
     _last.clear()
     try:
         agent().invoke({"messages": [types.Content(role="user", parts=[types.Part(text=q)])]},

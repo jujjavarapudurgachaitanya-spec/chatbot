@@ -1,5 +1,3 @@
-"""Safety layer: validates the question going in and the SQL coming back out."""
-
 import re
 
 MAX_QUESTION_LEN = 500
@@ -20,7 +18,7 @@ def check_question(question: str) -> str:
         raise Blocked("Please ask a question about the data.")
     if len(q) > MAX_QUESTION_LEN:
         raise Blocked(f"Question too long (max {MAX_QUESTION_LEN} characters).")
-    if re.search(WRITE_WORDS, q, re.I):  # refuse before spending an LLM call
+    if re.search(WRITE_WORDS, q, re.I):  
         raise Blocked(REFUSAL)
     return q
 
@@ -39,7 +37,7 @@ def check_sql(sql: str, allowed_tables) -> str:
     if re.search(WRITE_WORDS, sql, re.I):
         raise Blocked("Data-modifying SQL is not allowed.")
 
-    scan = re.sub(r"'[^']*'", "''", sql)  # string literals are data, not table names
+    scan = re.sub(r"'[^']*'", "''", sql)  
     used = {t.lower() for t in re.findall(r"(?is)\b(?:from|join)\s+[\"`\[]?(\w+)", scan)}
     ctes = {c.lower() for c in re.findall(r"(?is)\b(\w+)\s+as\s*\(", scan)}
     unknown = used - {t.lower() for t in allowed_tables} - ctes
